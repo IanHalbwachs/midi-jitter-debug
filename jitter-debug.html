@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+  <head>
+    <title>MIDI jitter debugger</title>
+  </head>
+  <body style="font-family:monospace">
+    <h1 style="margin-bottom:0px;">MIDI jitter debugger</h1>
+    <a href="https://github.com/IanHalbwachs/midi-jitter-debug" target="_blank" rel="noopener noreferrer">@IanHalbwachs</a>
+    <h3>Select Midi Input</h3>
+    <div id="reset"></div>
+    <div id="input_list"></div>
+    <pre id="histogram" style="font-size:large;margin:0px;"></pre>
+    <script type="text/javascript">
+      async function main() {
+
+        const $ = document;
+        const midiInputs = Array.from((await navigator.requestMIDIAccess()).inputs.values());
+        midiInputs.forEach((input, i) => {
+          let selector = $.createElement('div');
+          selector.innerHTML = `<input type="radio" id="${i}">${input.name}</input>`;
+          selector.querySelector('input').onclick = handleInputSelect;
+          $.getElementById('input_list').appendChild(selector);
+        });
+        const resetButton = $.createElement('button');
+        resetButton.innerHTML = 'Reset';
+        resetButton.onclick = window.location.reload.bind(window.location);
+        const histogram = { "total events": 0, "intervals (ms)": {} };
+        let prev;
+
+
+        function handleInputSelect(e) {
+          const midiInput = midiInputs[e.target.id];
+          midiInput.onmidimessage = handleMidiEvent;
+          $.getElementById('input_list').innerHTML = null;
+          let i = 0;
+          const ellipses = ['', '.', '..', '...', '&nbsp;..', '&nbsp;&nbsp;.'];
+          const getListening = () =>
+            $.querySelector('h3').innerHTML = `<i>Listening to ${midiInput.name} for note-on messages on channel 1${ellipses[(i++)%6]}<i>`;
+          getListening();
+          setInterval(getListening, 300);
+          $.getElementById('reset').appendChild(resetButton);
+          renderHistogram();
+        }
+
+        function handleMidiEvent(e) {
+          // note on, channel 1
+          if (((e.data[0] >> 4) === 9) && ((e.data[0] & 15) === 0)) {
+            const now = new Date();
+
+            if (prev) {
+              const diff = now - prev;
+              if (histogram["intervals (ms)"][diff]) {
+                histogram["intervals (ms)"][diff] += 1;
+              } else {
+                histogram["intervals (ms)"][diff] = 1;
+              }
+              histogram["total events"] += 1;
+            }
+            prev = now;
+            renderHistogram();
+          }
+        }
+
+        function renderHistogram() {
+          $.getElementById('histogram').innerHTML = JSON.stringify(histogram, null, 2).replace(/[{}",]/g, '')
+        }
+      }
+
+      main();
+    </script>
+  </body>
+</html>
