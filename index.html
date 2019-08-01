@@ -32,12 +32,7 @@
           const midiInput = midiInputs[e.target.id];
           midiInput.onmidimessage = handleMidiEvent;
           $.getElementById('input_list').innerHTML = null;
-          let i = 0;
-          const ellipses = ['', '.', '..', '...', '&nbsp;..', '&nbsp;&nbsp;.'];
-          const getListening = () =>
-            $.querySelector('h3').innerHTML = `<i>Listening to ${midiInput.name} for note-on messages on channel 1${ellipses[(i++)%6]}<i>`;
-          getListening();
-          setInterval(getListening, 300);
+          $.querySelector('h3').innerHTML = `<i>Listening to ${midiInput.name} for note-on messages on channel 1...<i>`;
           $.getElementById('reset').appendChild(resetButton);
           renderHistogram();
         }
